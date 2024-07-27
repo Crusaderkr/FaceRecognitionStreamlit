@@ -1,0 +1,6 @@
+streamlit
+opencv-python-headless
+numpy
+face-recognition
+pandas
+dlib @ https://files.pythonhosted.org/packages/8a/63/5f5e9ae63f30d614929e3dd88823b33063e7ed0d13c3ee9aa72c13d59b61/dlib-19.22.1-cp38-cp38-manylinux1_x86_64.whl
