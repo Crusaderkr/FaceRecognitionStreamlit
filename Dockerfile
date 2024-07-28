@@ -1,51 +1,44 @@
-# Use the official Miniconda3 image
-FROM continuumio/miniconda3
+# Use the official Python image
+FROM python:3.8-slim
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the environment.yml to the working directory
-COPY environment.yml .
-
-# Install system-level dependencies
+# Install system-level dependencies for dlib and others
 RUN apt-get update && apt-get install -y \
     libegl1 \
     libglvnd0 \
     libglib2.0-0 \
     libgl1-mesa-glx \
     cmake \
+    build-essential \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Verify installation of system-level dependencies
-RUN ldconfig -p | grep libEGL
-RUN cmake --version
+# Copy the requirements file
+COPY requirements.txt .
 
-# Update conda and ensure the classic solver is set
-RUN conda update conda -n base -c defaults && \
-    conda config --set solver classic
+# Create a virtual environment
+RUN python -m venv venv
 
-# Install the conda environment
-RUN conda env create -f environment.yml
+# Activate the virtual environment and install the dependencies
+RUN ./venv/bin/pip install --upgrade pip \
+    && ./venv/bin/pip install -r requirements.txt
 
-# Activate the environment and install additional packages
-SHELL ["conda", "run", "-n", "face-recognition-app", "/bin/bash", "-c"]
+# Copy the known_faces directory
+COPY FaceRecogAtt/known_faces /app/FaceRecogAtt/known_faces
 
-# Copy the rest of the application code to the working directory
+# Debugging step: List the contents of the known_faces directory
+RUN ls -R /app/FaceRecogAtt/known_faces
+
+# Copy the rest of the application code
 COPY . .
 
-# Change the working directory to FaceRecogAtt
-WORKDIR /app/FaceRecogAtt
-
-# Print the directory structure to verify files
-RUN ls -R /app/FaceRecogAtt
-
-# Print the Conda environment structure to verify creation
-RUN conda env list
-RUN conda list -n face-recognition-app
+# Expose the port Streamlit runs on
+EXPOSE 8501
 
 # Set the entry point to Streamlit
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "face-recognition-app", "streamlit", "run"]
+ENTRYPOINT ["./venv/bin/streamlit", "run"]
 
 # Command to run the Streamlit app
-CMD ["with_interface.py"]
-
+CMD ["FaceRecogAtt/with_interface.py"]
