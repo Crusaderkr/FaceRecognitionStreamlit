@@ -15,30 +15,27 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file
-COPY requirements.txt .
+# Copy the environment file
+COPY environment.yml .
 
-# Create a virtual environment
-RUN python -m venv venv
+# Create the Conda environment and activate it
+RUN apt-get install -y --no-install-recommends wget bzip2 ca-certificates \
+    && wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+    && /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda \
+    && rm Miniconda3-latest-Linux-x86_64.sh \
+    && /opt/conda/bin/conda env create -f environment.yml
 
-# Activate the virtual environment and install the dependencies
-RUN ./venv/bin/pip install --upgrade pip \
-    && ./venv/bin/pip install -r requirements.txt
+# Activate the environment and ensure Streamlit and other packages are available
+ENV PATH /opt/conda/envs/face-recognition-app/bin:$PATH
 
-# Copy the known_faces directory
-COPY FaceRecogAtt/known_faces /app/FaceRecogAtt/known_faces
-
-# Debugging step: List the contents of the known_faces directory
-RUN ls -R /app/FaceRecogAtt/known_faces
-
-# Copy the rest of the application code
+# Copy the application code
 COPY . .
 
 # Expose the port Streamlit runs on
 EXPOSE 8501
 
 # Set the entry point to Streamlit
-ENTRYPOINT ["./venv/bin/streamlit", "run"]
+ENTRYPOINT ["streamlit", "run"]
 
 # Command to run the Streamlit app
 CMD ["FaceRecogAtt/with_interface.py"]
